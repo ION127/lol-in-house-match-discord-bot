@@ -193,12 +193,12 @@ class PositionSelectView(discord.ui.View):
     @discord.ui.select(
         placeholder="참가할 포지션을 선택하세요",
         options=[
-            discord.SelectOption(label="탑",  value="탑",  emoji="🔝"),
-            discord.SelectOption(label="정글", value="정글", emoji="🌲"),
-            discord.SelectOption(label="미드", value="미드", emoji="⚔️"),
-            discord.SelectOption(label="원딜", value="원딜", emoji="🏹"),
-            discord.SelectOption(label="서폿", value="서폿", emoji="🛡️"),
-            discord.SelectOption(label="무관", value="무관", emoji="🎲"),
+            discord.SelectOption(label="탑",   value="탑",   emoji=discord.PartialEmoji(name="positiontop",     id=1520784540896067785)),
+            discord.SelectOption(label="정글", value="정글", emoji=discord.PartialEmoji(name="positionjungle",  id=1520784513238831187)),
+            discord.SelectOption(label="미드", value="미드", emoji=discord.PartialEmoji(name="positionmiddle",  id=1520784528082337832)),
+            discord.SelectOption(label="원딜", value="원딜", emoji=discord.PartialEmoji(name="positionbottom",  id=1520784499078594560)),
+            discord.SelectOption(label="서폿", value="서폿", emoji=discord.PartialEmoji(name="positionutility", id=1520784553340440576)),
+            discord.SelectOption(label="무관", value="무관", emoji=discord.PartialEmoji(name="iconpositionfill",id=1520789384184725556)),
         ],
     )
     async def select_position(
@@ -507,12 +507,12 @@ class WaitlistPositionSelectView(discord.ui.View):
     @discord.ui.select(
         placeholder="희망 포지션을 선택하세요 (대기열용)",
         options=[
-            discord.SelectOption(label="탑",  value="탑",  emoji="🔝"),
-            discord.SelectOption(label="정글", value="정글", emoji="🌲"),
-            discord.SelectOption(label="미드", value="미드", emoji="⚔️"),
-            discord.SelectOption(label="원딜", value="원딜", emoji="🏹"),
-            discord.SelectOption(label="서폿", value="서폿", emoji="🛡️"),
-            discord.SelectOption(label="무관", value="무관", emoji="🎲"),
+            discord.SelectOption(label="탑",   value="탑",   emoji=discord.PartialEmoji(name="positiontop",     id=1520784540896067785)),
+            discord.SelectOption(label="정글", value="정글", emoji=discord.PartialEmoji(name="positionjungle",  id=1520784513238831187)),
+            discord.SelectOption(label="미드", value="미드", emoji=discord.PartialEmoji(name="positionmiddle",  id=1520784528082337832)),
+            discord.SelectOption(label="원딜", value="원딜", emoji=discord.PartialEmoji(name="positionbottom",  id=1520784499078594560)),
+            discord.SelectOption(label="서폿", value="서폿", emoji=discord.PartialEmoji(name="positionutility", id=1520784553340440576)),
+            discord.SelectOption(label="무관", value="무관", emoji=discord.PartialEmoji(name="iconpositionfill",id=1520789384184725556)),
         ],
     )
     async def select_waitlist_position(
