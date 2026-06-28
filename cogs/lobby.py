@@ -319,7 +319,11 @@ class RiotIDModal(discord.ui.Modal, title="라이엇 계정 연동"):
             )
             return
 
-        await db.upsert_user(str(interaction.user.id), **data)
+        await db.upsert_user(
+            str(interaction.user.id),
+            discord_name=str(interaction.user.display_name),
+            **data,
+        )
 
         lobby = await db.get_lobby(self.lobby_id)
         if not lobby or lobby["status"] != "open":

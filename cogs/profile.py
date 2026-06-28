@@ -37,7 +37,11 @@ class ProfileCog(commands.Cog):
             )
             return
 
-        await db.upsert_user(str(interaction.user.id), **data)
+        await db.upsert_user(
+            str(interaction.user.id),
+            discord_name=str(interaction.user.display_name),
+            **data,
+        )
 
         solo_str = riot.format_tier(data["solo_tier"], data.get("solo_rank"), data.get("solo_lp", 0))
         flex_str = riot.format_tier(data["flex_tier"], data.get("flex_rank"), data.get("flex_lp", 0))

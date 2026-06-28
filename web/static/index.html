@@ -156,7 +156,7 @@
       <!-- 유저 관리 -->
       <section id="pageUsers" class="hidden fade-in">
         <div class="mb-4">
-          <input id="userSearch" type="text" placeholder="라이엇 ID 또는 Discord ID 검색..."
+          <input id="userSearch" type="text" placeholder="닉네임, 라이엇 ID 또는 Discord ID 검색..."
             oninput="searchUsers()"
             class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 w-full sm:w-80 focus:outline-none focus:border-indigo-500 transition-colors">
         </div>
@@ -165,7 +165,7 @@
             <table class="w-full text-sm min-w-[600px]">
               <thead class="bg-gray-800/60 text-xs text-gray-400 uppercase tracking-wide">
                 <tr>
-                  <th class="px-4 py-3 text-left">Discord ID</th>
+                  <th class="px-4 py-3 text-left">Discord</th>
                   <th class="px-4 py-3 text-left">라이엇 ID</th>
                   <th class="px-4 py-3 text-left">솔로랭크</th>
                   <th class="px-4 py-3 text-left">주/부 라인</th>
@@ -651,6 +651,7 @@ function searchUsers() {
   const q = document.getElementById('userSearch').value.toLowerCase();
   renderUsers(q ? allUsers.filter(u =>
     u.discord_id.includes(q) ||
+    (u.discord_name||'').toLowerCase().includes(q) ||
     (u.game_name||'').toLowerCase().includes(q) ||
     (u.tag_line||'').toLowerCase().includes(q)
   ) : allUsers);
@@ -665,9 +666,12 @@ function renderUsers(users) {
     const tierStr = `<span class="flex items-center gap-1">${tierImg(tier,18)} <span>${tierLabel}</span></span>`;
     const mainPos = `<span class="flex items-center gap-1 inline-flex">${posImg(u.main_role,14)} <span>${u.main_role||'무관'}</span></span>`;
     const subPos  = `<span class="flex items-center gap-1 inline-flex">${posImg(u.sub_role,14)} <span>${u.sub_role||'무관'}</span></span>`;
+    const discordCell = u.discord_name
+      ? `<div class="text-sm text-white">${u.discord_name}</div><div class="font-mono text-xs text-gray-500">${u.discord_id}</div>`
+      : `<div class="font-mono text-xs text-gray-400">${u.discord_id}</div>`;
     return `
     <tr class="hover:bg-gray-800/30 transition-colors">
-      <td class="px-4 py-3 font-mono text-xs text-gray-400">${u.discord_id}</td>
+      <td class="px-4 py-3">${discordCell}</td>
       <td class="px-4 py-3 text-sm text-white">${u.game_name ? `${u.game_name}<span class="text-gray-500">#${u.tag_line}</span>` : '<span class="text-gray-600">미등록</span>'}</td>
       <td class="px-4 py-3 text-sm whitespace-nowrap">${tierStr}</td>
       <td class="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">${mainPos} / ${subPos}</td>

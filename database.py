@@ -7,19 +7,20 @@ async def init_db() -> None:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                discord_id  TEXT PRIMARY KEY,
-                puuid       TEXT UNIQUE,
-                game_name   TEXT,
-                tag_line    TEXT,
-                main_role   TEXT DEFAULT '무관',
-                sub_role    TEXT DEFAULT '무관',
-                solo_tier   TEXT DEFAULT 'UNRANKED',
-                solo_rank   TEXT,
-                solo_lp     INTEGER DEFAULT 0,
-                flex_tier   TEXT DEFAULT 'UNRANKED',
-                flex_rank   TEXT,
-                flex_lp     INTEGER DEFAULT 0,
-                updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                discord_id    TEXT PRIMARY KEY,
+                discord_name  TEXT,
+                puuid         TEXT UNIQUE,
+                game_name     TEXT,
+                tag_line      TEXT,
+                main_role     TEXT DEFAULT '무관',
+                sub_role      TEXT DEFAULT '무관',
+                solo_tier     TEXT DEFAULT 'UNRANKED',
+                solo_rank     TEXT,
+                solo_lp       INTEGER DEFAULT 0,
+                flex_tier     TEXT DEFAULT 'UNRANKED',
+                flex_rank     TEXT,
+                flex_lp       INTEGER DEFAULT 0,
+                updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         await db.execute("""
@@ -111,6 +112,7 @@ async def init_db() -> None:
             "ALTER TABLE lobby_members ADD COLUMN position TEXT DEFAULT '무관'",
             "ALTER TABLE lobby_members ADD COLUMN team TEXT DEFAULT '미정'",
             "ALTER TABLE waitlist ADD COLUMN team TEXT DEFAULT '미정'",
+            "ALTER TABLE users ADD COLUMN discord_name TEXT",
         ]:
             try:
                 await db.execute(sql)
