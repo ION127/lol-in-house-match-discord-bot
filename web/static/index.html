@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>롤 내전 봇 — 관리자</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    .nav-active { background-color: #1e293b; color: #fff; }
+    .fade-in { animation: fadeIn .15s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans">
+
+<!-- ── 로그인 화면 ──────────────────────────────────────────────────────── -->
+<div id="loginScreen" class="flex items-center justify-center min-h-screen">
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-8 w-96">
+    <div class="text-center mb-8">
+      <div class="text-5xl mb-3">🎮</div>
+      <h1 class="text-2xl font-bold">롤 내전 봇</h1>
+      <p class="text-gray-500 text-sm mt-1">관리자 페이지</p>
+    </div>
+    <div id="loginErr" class="hidden text-red-400 text-sm bg-red-950 border border-red-800 rounded-lg px-4 py-2 mb-4"></div>
+    <input id="pwInput" type="password" placeholder="관리자 비밀번호"
+      class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 mb-4 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
+      onkeydown="if(event.key==='Enter')login()">
+    <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold py-3 rounded-xl transition-all">
+      로그인
+    </button>
+  </div>
+</div>
+
+<!-- ── 메인 앱 ─────────────────────────────────────────────────────────── -->
+<div id="mainApp" class="hidden flex min-h-screen">
+
+  <!-- 사이드바 -->
+  <aside class="w-56 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0 sticky top-0 h-screen">
+    <div class="px-5 py-5 border-b border-gray-800">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🎮</span>
+        <div>
+          <div class="font-bold text-white text-sm">내전 봇 관리자</div>
+          <div id="botStatusText" class="text-xs text-gray-500 mt-0.5">연결 확인 중...</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
+      <button onclick="showPage('dashboard')" id="nav-dashboard" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors flex items-center gap-2.5">
+        <span>📊</span> 대시보드
+      </button>
+      <button onclick="showPage('lobbies')" id="nav-lobbies" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors flex items-center gap-2.5">
+        <span>🎮</span> 내전 관리
+      </button>
+      <button onclick="showPage('users')" id="nav-users" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors flex items-center gap-2.5">
+        <span>👥</span> 유저 관리
+      </button>
+      <button onclick="showPage('bans')" id="nav-bans" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors flex items-center gap-2.5">
+        <span>🔨</span> 차단 관리
+      </button>
+      <button onclick="showPage('settings')" id="nav-settings" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors flex items-center gap-2.5">
+        <span>⚙️</span> 설정
+      </button>
+      <button onclick="showPage('logs')" id="nav-logs" class="nav-btn w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors flex items-center gap-2.5">
+        <span>📋</span> 로그
+      </button>
+    </nav>
+
+    <div class="p-3 border-t border-gray-800">
+      <button onclick="logout()" class="w-full text-left text-xs text-gray-600 hover:text-gray-400 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+        로그아웃
+      </button>
+    </div>
+  </aside>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+    <header class="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <h2 id="pageTitle" class="text-lg font-semibold text-white">대시보드</h2>
+      <button onclick="refreshPage()" class="text-xs text-gray-500 hover:text-gray-300 bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors">
+        🔄 새로고침
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-auto p-6">
+
+      <!-- 대시보드 -->
+      <section id="pageDashboard" class="hidden fade-in">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <div class="text-xs text-gray-500 mb-1">활성 내전</div>
+            <div id="statActive" class="text-3xl font-bold text-indigo-400">—</div>
+          </div>
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <div class="text-xs text-gray-500 mb-1">총 유저</div>
+            <div id="statUsers" class="text-3xl font-bold text-green-400">—</div>
+          </div>
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <div class="text-xs text-gray-500 mb-1">완료된 내전</div>
+            <div id="statCompleted" class="text-3xl font-bold text-yellow-400">—</div>
+          </div>
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <div class="text-xs text-gray-500 mb-1">차단 유저</div>
+            <div id="statBanned" class="text-3xl font-bold text-red-400">—</div>
+          </div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <h3 class="text-sm font-semibold text-gray-300 mb-3">진행 중인 내전</h3>
+          <div id="dashLobbies" class="space-y-2 text-sm text-gray-400">로딩 중...</div>
+        </div>
+      </section>
+
+      <!-- 내전 관리 -->
+      <section id="pageLobbies" class="hidden fade-in">
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button onclick="setLobbyFilter('all')" data-f="all" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white">전체</button>
+          <button onclick="setLobbyFilter('open')" data-f="open" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700">모집 중</button>
+          <button onclick="setLobbyFilter('full')" data-f="full" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700">모집 완료</button>
+          <button onclick="setLobbyFilter('cancelled')" data-f="cancelled" class="filter-btn text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700">취소됨</button>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-800/60 text-xs text-gray-400 uppercase tracking-wide">
+              <tr>
+                <th class="px-4 py-3 text-left">ID</th>
+                <th class="px-4 py-3 text-left">개설자 ID</th>
+                <th class="px-4 py-3 text-left">상태</th>
+                <th class="px-4 py-3 text-left">참가자</th>
+                <th class="px-4 py-3 text-left">개설 시각</th>
+                <th class="px-4 py-3 text-left">액션</th>
+              </tr>
+            </thead>
+            <tbody id="lobbiesTbody" class="divide-y divide-gray-800/50"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 유저 관리 -->
+      <section id="pageUsers" class="hidden fade-in">
+        <div class="mb-4">
+          <input id="userSearch" type="text" placeholder="라이엇 ID 또는 Discord ID 검색..."
+            oninput="searchUsers()"
+            class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 w-80 focus:outline-none focus:border-indigo-500 transition-colors">
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-800/60 text-xs text-gray-400 uppercase tracking-wide">
+              <tr>
+                <th class="px-4 py-3 text-left">Discord ID</th>
+                <th class="px-4 py-3 text-left">라이엇 ID</th>
+                <th class="px-4 py-3 text-left">솔로랭크</th>
+                <th class="px-4 py-3 text-left">주/부 라인</th>
+                <th class="px-4 py-3 text-left">업데이트</th>
+                <th class="px-4 py-3 text-left">액션</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody" class="divide-y divide-gray-800/50"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 차단 관리 -->
+      <section id="pageBans" class="hidden fade-in">
+        <div class="flex items-center gap-3 mb-4">
+          <select id="banGuildFilter" onchange="loadBans()" class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="">전체 서버</option>
+          </select>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-800/60 text-xs text-gray-400 uppercase tracking-wide">
+              <tr>
+                <th class="px-4 py-3 text-left">Discord ID</th>
+                <th class="px-4 py-3 text-left">서버 ID</th>
+                <th class="px-4 py-3 text-left">사유</th>
+                <th class="px-4 py-3 text-left">만료 일시</th>
+                <th class="px-4 py-3 text-left">액션</th>
+              </tr>
+            </thead>
+            <tbody id="bansTbody" class="divide-y divide-gray-800/50"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 로그 -->
+      <section id="pageLogs" class="hidden fade-in">
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <select id="logEventFilter" onchange="loadLogs()" class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="">전체 이벤트</option>
+            <option value="lobby_created">내전 개설</option>
+            <option value="lobby_cancelled">내전 취소</option>
+            <option value="lobby_expired">자동 만료</option>
+            <option value="lobby_full">모집 완료</option>
+            <option value="member_joined">참가</option>
+            <option value="member_left">퇴장</option>
+            <option value="member_kicked">강제 퇴장</option>
+            <option value="member_promoted">대기 승격</option>
+            <option value="user_banned">차단</option>
+            <option value="user_unbanned">차단 해제</option>
+            <option value="settings_changed">설정 변경</option>
+          </select>
+          <select id="logGuildFilter" onchange="loadLogs()" class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="">전체 서버</option>
+          </select>
+          <select id="logLimit" onchange="loadLogs()" class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="100">최근 100개</option>
+            <option value="300" selected>최근 300개</option>
+            <option value="500">최근 500개</option>
+            <option value="1000">최근 1000개</option>
+          </select>
+          <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer ml-auto">
+            <input type="checkbox" id="logAutoRefresh" onchange="toggleAutoRefresh()" class="accent-indigo-500">
+            자동 새로고침 (15초)
+          </label>
+          <button onclick="exportLogsCsv()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition-colors">📥 CSV 내보내기</button>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-800/60 text-xs text-gray-400 uppercase tracking-wide">
+              <tr>
+                <th class="px-4 py-3 text-left">시각</th>
+                <th class="px-4 py-3 text-left">이벤트</th>
+                <th class="px-4 py-3 text-left">내전 ID</th>
+                <th class="px-4 py-3 text-left">Discord ID</th>
+                <th class="px-4 py-3 text-left">상세</th>
+              </tr>
+            </thead>
+            <tbody id="logsTbody" class="divide-y divide-gray-800/50"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 설정 -->
+      <section id="pageSettings" class="hidden fade-in">
+        <div class="mb-4 flex items-center gap-3">
+          <label class="text-sm text-gray-400">서버 선택</label>
+          <select id="settingsGuild" onchange="loadSettings()" class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="">서버를 선택하세요</option>
+          </select>
+        </div>
+        <div id="settingsCard" class="hidden bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md fade-in">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">알림 역할 ID</label>
+              <input id="sAlertRole" type="text" placeholder="역할 ID (없으면 비워두세요)"
+                class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">로그 채널 ID</label>
+              <input id="sLogChannel" type="text" placeholder="채널 ID (없으면 비워두세요)"
+                class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">재개설 쿨타임 (분)</label>
+              <input id="sCooldown" type="number" min="0" max="60"
+                class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">최대 참가 인원 (2~20)</label>
+              <input id="sMaxMembers" type="number" min="2" max="20"
+                class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <button onclick="saveSettings()" class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold py-2.5 rounded-xl transition-all text-sm">
+              저장
+            </button>
+            <p id="settingsSavedMsg" class="hidden text-center text-green-400 text-xs">✅ 저장되었습니다</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ── 내전 상세 모달 ─────────────────────────────────────────────────────── -->
+<div id="lobbyModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900">
+      <h3 id="lobbyModalTitle" class="font-semibold text-white">내전 상세</h3>
+      <button onclick="closeModal('lobbyModal')" class="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+    </div>
+    <div id="lobbyModalBody" class="p-6"></div>
+  </div>
+</div>
+
+<!-- ── 차단 모달 ──────────────────────────────────────────────────────────── -->
+<div id="banModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+      <h3 class="font-semibold text-white">유저 차단</h3>
+      <button onclick="closeModal('banModal')" class="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+    </div>
+    <div class="p-6 space-y-4">
+      <input type="hidden" id="banTargetId">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5">서버</label>
+        <select id="banGuildSel" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5">차단 기간 <span class="text-gray-600">(비우면 영구)</span></label>
+        <input id="banDuration" type="text" placeholder="예: 7일 / 24시간 / 30분"
+          class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5">사유</label>
+        <input id="banReason" type="text" placeholder="차단 사유"
+          class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <button onclick="submitBan()" class="w-full bg-red-600 hover:bg-red-500 active:scale-95 text-white font-semibold py-2.5 rounded-xl transition-all text-sm">
+        차단 적용
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 차단 해제 모달 ─────────────────────────────────────────────────────── -->
+<div id="unbanModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+      <h3 class="font-semibold text-white">차단 해제</h3>
+      <button onclick="closeModal('unbanModal')" class="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+    </div>
+    <div class="p-6 space-y-4">
+      <input type="hidden" id="unbanTargetId">
+      <input type="hidden" id="unbanGuildId">
+      <p id="unbanDesc" class="text-sm text-gray-300"></p>
+      <button onclick="submitUnban()" class="w-full bg-green-700 hover:bg-green-600 active:scale-95 text-white font-semibold py-2.5 rounded-xl transition-all text-sm">
+        차단 해제
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 토스트 ──────────────────────────────────────────────────────────────── -->
+<div id="toast" class="hidden fixed bottom-6 right-6 px-5 py-3 rounded-xl text-sm font-medium shadow-2xl z-50"></div>
+
+<!-- ── 스크립트 ───────────────────────────────────────────────────────────── -->
+<script>
+// ── 상태 ──────────────────────────────────────────────────────────────────
+let token = localStorage.getItem('admin_token') || '';
+let guilds = [];
+let allUsers = [];
+let allLobbies = [];
+let lobbyFilter = 'all';
+let currentPage = '';
+
+// ── 상수 ──────────────────────────────────────────────────────────────────
+const TIER_EMOJI = {IRON:'⬛',BRONZE:'🟫',SILVER:'⬜',GOLD:'🟨',PLATINUM:'🟩',EMERALD:'💚',DIAMOND:'🔷',MASTER:'🟣',GRANDMASTER:'🔴',CHALLENGER:'🏆',UNRANKED:'❓'};
+const TIER_KO = {IRON:'아이언',BRONZE:'브론즈',SILVER:'실버',GOLD:'골드',PLATINUM:'플래티넘',EMERALD:'에메랄드',DIAMOND:'다이아',MASTER:'마스터',GRANDMASTER:'그랜드마스터',CHALLENGER:'챌린저',UNRANKED:'언랭'};
+const POS_EMOJI = {'탑':'🔝','정글':'🌲','미드':'⚔️','원딜':'🏹','서폿':'🛡️','무관':'🎲'};
+const STATUS_BADGE = {
+  open: '<span class="bg-green-900/60 text-green-300 text-xs px-2 py-0.5 rounded-full">모집 중</span>',
+  full: '<span class="bg-blue-900/60 text-blue-300 text-xs px-2 py-0.5 rounded-full">모집 완료</span>',
+  cancelled: '<span class="bg-gray-800 text-gray-400 text-xs px-2 py-0.5 rounded-full">취소됨</span>',
+};
+
+// ── 로그인 ─────────────────────────────────────────────────────────────────
+async function login() {
+  const pw = document.getElementById('pwInput').value;
+  const err = document.getElementById('loginErr');
+  try {
+    const r = await fetch('/api/auth', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pw})});
+    if (!r.ok) { err.textContent = '비밀번호가 올바르지 않습니다.'; err.classList.remove('hidden'); return; }
+    const d = await r.json();
+    token = d.token;
+    localStorage.setItem('admin_token', token);
+    err.classList.add('hidden');
+    await initApp();
+  } catch {
+    err.textContent = '서버에 연결할 수 없습니다.';
+    err.classList.remove('hidden');
+  }
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  token = '';
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+// ── 초기화 ─────────────────────────────────────────────────────────────────
+async function initApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  await loadGuilds();
+  showPage('dashboard');
+}
+
+async function loadGuilds() {
+  try {
+    const d = await api('/api/guilds');
+    guilds = d.guilds || [];
+    const guildOptions = guilds.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+    ['banGuildSel','settingsGuild','banGuildFilter','logGuildFilter'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.insertAdjacentHTML('beforeend', guildOptions);
+    });
+    document.getElementById('botStatusText').textContent = `✅ 온라인 · ${guilds.length}개 서버`;
+  } catch {
+    document.getElementById('botStatusText').textContent = '⚠️ 봇 연결 오류';
+  }
+}
+
+// ── API 헬퍼 ───────────────────────────────────────────────────────────────
+async function api(url, opts = {}) {
+  const r = await fetch(url, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers||{}) },
+  });
+  if (r.status === 401) { logout(); throw new Error('Unauthorized'); }
+  if (!r.ok) { const t = await r.text(); throw new Error(t); }
+  return r.json();
+}
+
+// ── 페이지 전환 ────────────────────────────────────────────────────────────
+const PAGE_TITLES = {dashboard:'📊 대시보드', lobbies:'🎮 내전 관리', users:'👥 유저 관리', bans:'🔨 차단 관리', settings:'⚙️ 설정', logs:'📋 로그'};
+
+function showPage(p) {
+  if (currentPage === p) return;
+  currentPage = p;
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[p];
+  document.querySelectorAll('section[id^="page"]').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active', 'text-white'));
+  const cap = p.charAt(0).toUpperCase() + p.slice(1);
+  document.getElementById(`page${cap}`).classList.remove('hidden');
+  document.getElementById(`nav-${p}`)?.classList.add('nav-active', 'text-white');
+  loadPage(p);
+}
+
+function refreshPage() { loadPage(currentPage); }
+
+function loadPage(p) {
+  if (p === 'dashboard') loadDashboard();
+  else if (p === 'lobbies') loadLobbies();
+  else if (p === 'users') loadUsers();
+  else if (p === 'bans') loadBans();
+  else if (p === 'logs') loadLogs();
+}
+
+// ── 대시보드 ───────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const d = await api('/api/dashboard');
+    document.getElementById('statActive').textContent = d.active_lobbies;
+    document.getElementById('statUsers').textContent = d.total_users;
+    document.getElementById('statCompleted').textContent = d.completed_lobbies;
+    document.getElementById('statBanned').textContent = d.banned_users;
+
+    const el = document.getElementById('dashLobbies');
+    if (!d.open_lobbies.length) { el.textContent = '진행 중인 내전이 없습니다.'; return; }
+    el.innerHTML = d.open_lobbies.map(l => `
+      <div class="flex items-center justify-between bg-gray-800/50 rounded-lg px-4 py-2.5">
+        <div class="flex items-center gap-3 text-sm">
+          <span class="text-indigo-400 font-mono text-xs">#${l.id}</span>
+          <span class="text-gray-300">참가자 <b>${l.member_count}</b>명</span>
+          <span class="text-gray-500 text-xs">${fmtDate(l.created_at)}</span>
+        </div>
+        <button onclick="viewLobby(${l.id})" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg transition-colors">상세</button>
+      </div>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ── 내전 관리 ──────────────────────────────────────────────────────────────
+async function loadLobbies() {
+  try {
+    const d = await api('/api/lobbies');
+    allLobbies = d.lobbies || [];
+    renderLobbies();
+  } catch(e) { console.error(e); }
+}
+
+function setLobbyFilter(f) {
+  lobbyFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    const active = b.dataset.f === f;
+    b.className = `filter-btn text-xs px-3 py-1.5 rounded-lg transition-colors ${active ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`;
+  });
+  renderLobbies();
+}
+
+function renderLobbies() {
+  const rows = (lobbyFilter === 'all' ? allLobbies : allLobbies.filter(l => l.status === lobbyFilter));
+  const tb = document.getElementById('lobbiesTbody');
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">내전이 없습니다</td></tr>`; return; }
+  tb.innerHTML = rows.map(l => `
+    <tr class="hover:bg-gray-800/30 transition-colors">
+      <td class="px-4 py-3 font-mono text-indigo-400 text-xs">#${l.id}</td>
+      <td class="px-4 py-3 font-mono text-xs text-gray-400">${l.creator_discord_id}</td>
+      <td class="px-4 py-3">${STATUS_BADGE[l.status] || l.status}</td>
+      <td class="px-4 py-3 text-gray-300 text-sm">${l.member_count}명</td>
+      <td class="px-4 py-3 text-gray-500 text-xs">${fmtDate(l.created_at)}</td>
+      <td class="px-4 py-3">
+        <div class="flex gap-1.5">
+          <button onclick="viewLobby(${l.id})" class="text-xs bg-gray-800 hover:bg-gray-700 px-2.5 py-1 rounded-lg transition-colors">상세</button>
+          ${['open','full'].includes(l.status) ? `<button onclick="cancelLobby(${l.id})" class="text-xs bg-red-900/60 hover:bg-red-800/60 text-red-300 px-2.5 py-1 rounded-lg transition-colors">취소</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function viewLobby(id) {
+  document.getElementById('lobbyModalTitle').textContent = `내전 #${id} 상세`;
+  document.getElementById('lobbyModalBody').innerHTML = '<div class="text-gray-400 text-sm">로딩 중...</div>';
+  document.getElementById('lobbyModal').classList.remove('hidden');
+  try {
+    const {lobby: l, members, waitlist} = await api(`/api/lobbies/${id}`);
+    const isActive = ['open','full'].includes(l.status);
+    const teamSection = (key, emoji) => {
+      const g = members.filter(m => (m.team || '미정') === key);
+      if (!g.length) return '';
+      return `
+        <div class="mb-3">
+          <div class="text-xs text-gray-500 mb-1.5">${emoji} ${key} (${g.length}명)</div>
+          ${g.map((m,i) => memberRow(m, i+1, l.id, isActive)).join('')}
+        </div>`;
+    };
+    const unassigned = members.filter(m => !m.team || m.team === '미정');
+
+    document.getElementById('lobbyModalBody').innerHTML = `
+      <div class="grid grid-cols-2 gap-3 mb-5 text-sm">
+        <div><span class="text-gray-500">상태</span><div class="mt-0.5">${STATUS_BADGE[l.status]||l.status}</div></div>
+        <div><span class="text-gray-500">개설자</span><div class="mt-0.5 font-mono text-xs text-gray-300">${l.creator_discord_id}</div></div>
+        <div><span class="text-gray-500">개설 시각</span><div class="mt-0.5 text-gray-300 text-xs">${fmtDate(l.created_at)}</div></div>
+        <div><span class="text-gray-500">참가자</span><div class="mt-0.5 text-gray-300">${members.length}명 ${waitlist.length ? `(대기 ${waitlist.length}명)` : ''}</div></div>
+      </div>
+      <h4 class="text-xs text-gray-500 uppercase tracking-wide mb-2">참가자</h4>
+      ${teamSection('1팀','🔵')}${teamSection('2팀','🔴')}
+      ${unassigned.length ? `<div class="mb-3"><div class="text-xs text-gray-500 mb-1.5">⬜ 팀 미정 (${unassigned.length}명)</div>${unassigned.map((m,i)=>memberRow(m, i+1, l.id, isActive)).join('')}</div>` : ''}
+      ${waitlist.length ? `<h4 class="text-xs text-gray-500 uppercase tracking-wide mt-4 mb-2">대기열</h4>${waitlist.map((w,i)=>`<div class="flex items-center gap-2 bg-gray-800/40 rounded-lg px-3 py-2 mb-1 text-xs text-gray-400"><span>${i+1}</span><span class="font-mono">${w.discord_id}</span><span>${POS_EMOJI[w.position]||''}${w.position}</span><span class="ml-auto ${w.team==='1팀'?'text-blue-400':w.team==='2팀'?'text-red-400':'text-gray-500'}">${w.team||'미정'}</span></div>`).join('')}` : ''}
+      ${isActive ? `<button onclick="cancelLobby(${l.id},true)" class="mt-5 w-full bg-red-600 hover:bg-red-500 text-white text-sm py-2.5 rounded-xl transition-colors">🗑️ 내전 강제 취소</button>` : ''}
+    `;
+  } catch(e) {
+    document.getElementById('lobbyModalBody').innerHTML = `<div class="text-red-400 text-sm">오류: ${e.message}</div>`;
+  }
+}
+
+function memberRow(m, i, lobbyId = null, canKick = false) {
+  const tier = m.solo_tier || 'UNRANKED';
+  const riotId = m.game_name ? `${m.game_name}#${m.tag_line}` : '<span class="text-gray-600">미등록</span>';
+  const kickBtn = canKick && lobbyId != null
+    ? `<button onclick="kickMember(${lobbyId},'${m.discord_id}')" class="ml-2 text-xs bg-red-900/50 hover:bg-red-800/70 text-red-300 px-2 py-0.5 rounded transition-colors">내보내기</button>`
+    : '';
+  return `
+    <div class="flex items-center gap-2 bg-gray-800/40 rounded-lg px-3 py-2 mb-1 text-xs">
+      <span class="text-gray-600 w-4">${i}</span>
+      <span class="font-mono text-gray-400">${m.discord_id}</span>
+      <span class="text-white ml-1">${riotId}</span>
+      <span class="ml-auto flex items-center gap-2 text-gray-400">
+        <span>${POS_EMOJI[m.position]||''}${m.position||'무관'}</span>
+        <span>${TIER_EMOJI[tier]||'❓'} ${TIER_KO[tier]||tier}${m.solo_rank ? ' '+m.solo_rank : ''}</span>
+        ${kickBtn}
+      </span>
+    </div>`;
+}
+
+async function kickMember(lobbyId, discordId) {
+  if (!confirm(`이 유저를 내전 #${lobbyId}에서 내보내겠습니까?\n해당 유저에게 DM이 발송되며, 대기열이 있으면 자동 승격됩니다.`)) return;
+  try {
+    await api(`/api/lobbies/${lobbyId}/members/${discordId}`, {method:'DELETE'});
+    toast('✅ 내보내기 완료. 디스코드 임베드가 갱신됩니다.', 'green');
+    viewLobby(lobbyId); // 모달 내용 새로고침
+    loadLobbies();      // 목록 카운트 갱신
+  } catch(e) { toast('❌ ' + e.message, 'red'); }
+}
+
+async function cancelLobby(id, fromModal = false) {
+  if (!confirm(`내전 #${id}를 강제 취소하시겠습니까?\n참가자 전원에게 DM이 발송됩니다.`)) return;
+  try {
+    await api(`/api/lobbies/${id}/cancel`, {method:'POST'});
+    toast('✅ 내전이 취소되었습니다.', 'green');
+    if (fromModal) closeModal('lobbyModal');
+    loadLobbies();
+    if (currentPage === 'dashboard') loadDashboard();
+  } catch(e) { toast('❌ 오류: ' + e.message, 'red'); }
+}
+
+// ── 유저 관리 ──────────────────────────────────────────────────────────────
+async function loadUsers() {
+  try {
+    const d = await api('/api/users');
+    allUsers = d.users || [];
+    renderUsers(allUsers);
+  } catch(e) { console.error(e); }
+}
+
+function searchUsers() {
+  const q = document.getElementById('userSearch').value.toLowerCase();
+  renderUsers(q ? allUsers.filter(u =>
+    u.discord_id.includes(q) ||
+    (u.game_name||'').toLowerCase().includes(q) ||
+    (u.tag_line||'').toLowerCase().includes(q)
+  ) : allUsers);
+}
+
+function renderUsers(users) {
+  const tb = document.getElementById('usersTbody');
+  if (!users.length) { tb.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">유저가 없습니다</td></tr>`; return; }
+  tb.innerHTML = users.map(u => {
+    const tier = u.solo_tier || 'UNRANKED';
+    const tierStr = TIER_KO[tier] ? `${TIER_EMOJI[tier]} ${TIER_KO[tier]}${u.solo_rank ? ' '+u.solo_rank : ''}` : '—';
+    return `
+    <tr class="hover:bg-gray-800/30 transition-colors">
+      <td class="px-4 py-3 font-mono text-xs text-gray-400">${u.discord_id}</td>
+      <td class="px-4 py-3 text-sm text-white">${u.game_name ? `${u.game_name}<span class="text-gray-500">#${u.tag_line}</span>` : '<span class="text-gray-600">미등록</span>'}</td>
+      <td class="px-4 py-3 text-sm">${tierStr}</td>
+      <td class="px-4 py-3 text-xs text-gray-400">${POS_EMOJI[u.main_role]||''}${u.main_role||'무관'} / ${POS_EMOJI[u.sub_role]||''}${u.sub_role||'무관'}</td>
+      <td class="px-4 py-3 text-xs text-gray-500">${fmtDate(u.updated_at)}</td>
+      <td class="px-4 py-3">
+        <div class="flex gap-1.5">
+          <button onclick="openBanModal('${u.discord_id}')" class="text-xs bg-red-900/50 hover:bg-red-800/60 text-red-300 px-2.5 py-1 rounded-lg transition-colors">차단</button>
+          <button onclick="confirmDeleteUser('${u.discord_id}')" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 px-2.5 py-1 rounded-lg transition-colors">삭제</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openBanModal(id) {
+  document.getElementById('banTargetId').value = id;
+  document.getElementById('banDuration').value = '';
+  document.getElementById('banReason').value = '';
+  document.getElementById('banModal').classList.remove('hidden');
+}
+
+async function submitBan() {
+  const id = document.getElementById('banTargetId').value;
+  const guildId = document.getElementById('banGuildSel').value;
+  const duration = document.getElementById('banDuration').value;
+  const reason = document.getElementById('banReason').value;
+  if (!guildId) { toast('서버를 선택하세요.', 'red'); return; }
+  try {
+    await api(`/api/users/${id}/ban`, {method:'POST', body:JSON.stringify({guild_id:guildId, duration, reason})});
+    toast('✅ 차단이 적용되었습니다.', 'green');
+    closeModal('banModal');
+  } catch(e) { toast('❌ ' + e.message, 'red'); }
+}
+
+async function confirmDeleteUser(id) {
+  if (!confirm(`유저 ${id}의 등록 정보를 삭제하시겠습니까?\n(내전 기록은 유지됩니다)`)) return;
+  try {
+    await api(`/api/users/${id}`, {method:'DELETE'});
+    toast('✅ 삭제되었습니다.', 'green');
+    loadUsers();
+  } catch(e) { toast('❌ ' + e.message, 'red'); }
+}
+
+// ── 차단 관리 ──────────────────────────────────────────────────────────────
+async function loadBans() {
+  const guildId = document.getElementById('banGuildFilter').value;
+  try {
+    const d = await api(`/api/bans${guildId ? '?guild_id='+guildId : ''}`);
+    const bans = d.bans || [];
+    const tb = document.getElementById('bansTbody');
+    if (!bans.length) { tb.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">차단된 유저가 없습니다</td></tr>`; return; }
+    tb.innerHTML = bans.map(b => `
+      <tr class="hover:bg-gray-800/30 transition-colors">
+        <td class="px-4 py-3 font-mono text-xs text-gray-300">${b.discord_id}</td>
+        <td class="px-4 py-3 font-mono text-xs text-gray-500">${b.guild_id}</td>
+        <td class="px-4 py-3 text-sm text-gray-300">${b.reason || '—'}</td>
+        <td class="px-4 py-3 text-xs ${b.banned_until ? 'text-yellow-400' : 'text-red-400'}">${b.banned_until ? fmtDate(b.banned_until) : '영구'}</td>
+        <td class="px-4 py-3">
+          <button onclick="openUnbanModal('${b.discord_id}','${b.guild_id}')" class="text-xs bg-green-900/50 hover:bg-green-800/60 text-green-300 px-2.5 py-1 rounded-lg transition-colors">해제</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+function openUnbanModal(discordId, guildId) {
+  document.getElementById('unbanTargetId').value = discordId;
+  document.getElementById('unbanGuildId').value = guildId;
+  document.getElementById('unbanDesc').textContent = `유저 ${discordId}의 차단을 해제하시겠습니까?`;
+  document.getElementById('unbanModal').classList.remove('hidden');
+}
+
+async function submitUnban() {
+  const id = document.getElementById('unbanTargetId').value;
+  const guildId = document.getElementById('unbanGuildId').value;
+  try {
+    await api(`/api/users/${id}/unban`, {method:'POST', body:JSON.stringify({guild_id:guildId})});
+    toast('✅ 차단이 해제되었습니다.', 'green');
+    closeModal('unbanModal');
+    loadBans();
+  } catch(e) { toast('❌ ' + e.message, 'red'); }
+}
+
+// ── 설정 ───────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  const guildId = document.getElementById('settingsGuild').value;
+  if (!guildId) return;
+  try {
+    const d = await api(`/api/settings/${guildId}`);
+    document.getElementById('sAlertRole').value = d.alert_role_id || '';
+    document.getElementById('sLogChannel').value = d.log_channel_id || '';
+    document.getElementById('sCooldown').value = d.cooldown_minutes ?? 5;
+    document.getElementById('sMaxMembers').value = d.max_members ?? 10;
+    document.getElementById('settingsCard').classList.remove('hidden');
+    document.getElementById('settingsSavedMsg').classList.add('hidden');
+  } catch(e) { toast('설정 로드 실패', 'red'); }
+}
+
+async function saveSettings() {
+  const guildId = document.getElementById('settingsGuild').value;
+  if (!guildId) return;
+  try {
+    await api(`/api/settings/${guildId}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        alert_role_id: document.getElementById('sAlertRole').value || null,
+        log_channel_id: document.getElementById('sLogChannel').value || null,
+        cooldown_minutes: parseInt(document.getElementById('sCooldown').value) || 5,
+        max_members: parseInt(document.getElementById('sMaxMembers').value) || 10,
+      })
+    });
+    const msg = document.getElementById('settingsSavedMsg');
+    msg.classList.remove('hidden');
+    setTimeout(() => msg.classList.add('hidden'), 2500);
+  } catch(e) { toast('❌ 저장 실패: ' + e.message, 'red'); }
+}
+
+// ── 로그 ───────────────────────────────────────────────────────────────────
+let _logRefreshTimer = null;
+
+async function loadLogs() {
+  const eventType = document.getElementById('logEventFilter').value;
+  const guildId = document.getElementById('logGuildFilter').value;
+  const limit = document.getElementById('logLimit').value;
+  try {
+    const params = new URLSearchParams({limit});
+    if (eventType) params.set('event_type', eventType);
+    if (guildId) params.set('guild_id', guildId);
+    const d = await api('/api/logs?' + params.toString());
+    renderLogs(d.logs || []);
+  } catch(e) { console.error(e); }
+}
+
+const LOG_EVENT_BADGE = {
+  lobby_created:    '<span class="bg-green-900/60 text-green-300 text-xs px-2 py-0.5 rounded-full">내전 개설</span>',
+  lobby_cancelled:  '<span class="bg-red-900/60 text-red-300 text-xs px-2 py-0.5 rounded-full">내전 취소</span>',
+  lobby_expired:    '<span class="bg-orange-900/60 text-orange-300 text-xs px-2 py-0.5 rounded-full">자동 만료</span>',
+  lobby_full:       '<span class="bg-blue-900/60 text-blue-300 text-xs px-2 py-0.5 rounded-full">모집 완료</span>',
+  member_joined:    '<span class="bg-indigo-900/60 text-indigo-300 text-xs px-2 py-0.5 rounded-full">참가</span>',
+  member_left:      '<span class="bg-gray-800 text-gray-400 text-xs px-2 py-0.5 rounded-full">퇴장</span>',
+  member_kicked:    '<span class="bg-red-900/40 text-red-400 text-xs px-2 py-0.5 rounded-full">강제 퇴장</span>',
+  member_promoted:  '<span class="bg-yellow-900/60 text-yellow-300 text-xs px-2 py-0.5 rounded-full">대기 승격</span>',
+  user_banned:      '<span class="bg-red-900/60 text-red-300 text-xs px-2 py-0.5 rounded-full">차단</span>',
+  user_unbanned:    '<span class="bg-green-900/40 text-green-400 text-xs px-2 py-0.5 rounded-full">차단 해제</span>',
+  settings_changed: '<span class="bg-purple-900/60 text-purple-300 text-xs px-2 py-0.5 rounded-full">설정 변경</span>',
+};
+
+function renderLogs(logs) {
+  const tb = document.getElementById('logsTbody');
+  if (!logs.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">로그가 없습니다</td></tr>';
+    return;
+  }
+  tb.innerHTML = logs.map(l => `
+    <tr class="hover:bg-gray-800/30 transition-colors">
+      <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${fmtDate(l.created_at)}</td>
+      <td class="px-4 py-3">${LOG_EVENT_BADGE[l.event_type] || `<span class="text-xs text-gray-400">${l.event_type}</span>`}</td>
+      <td class="px-4 py-3 font-mono text-xs text-indigo-400">${l.lobby_id != null ? '#'+l.lobby_id : '—'}</td>
+      <td class="px-4 py-3 font-mono text-xs text-gray-400">${l.discord_id || '—'}</td>
+      <td class="px-4 py-3 text-xs text-gray-400">${l.detail || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function toggleAutoRefresh() {
+  const checked = document.getElementById('logAutoRefresh').checked;
+  clearInterval(_logRefreshTimer);
+  if (checked) {
+    _logRefreshTimer = setInterval(() => { if (currentPage === 'logs') loadLogs(); }, 15000);
+  }
+}
+
+function exportLogsCsv() {
+  const rows = [...document.querySelectorAll('#logsTbody tr')];
+  if (!rows.length || rows[0].cells.length < 5) { toast('내보낼 로그가 없습니다', 'red'); return; }
+  const headers = ['시각','이벤트','내전ID','DiscordID','상세'];
+  const lines = [headers.join(',')];
+  rows.forEach(r => {
+    const cells = [...r.cells].map(c => `"${(c.innerText || c.textContent).replace(/"/g,'""')}"`);
+    lines.push(cells.join(','));
+  });
+  const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bot_logs_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── 헬퍼 ───────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function fmtDate(dt) {
+  if (!dt) return '—';
+  return new Date(dt+'Z').toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function toast(msg, color='green') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `fixed bottom-6 right-6 px-5 py-3 rounded-xl text-sm font-medium shadow-2xl z-50 ${color==='green' ? 'bg-green-800 text-green-100' : 'bg-red-800 text-red-100'}`;
+  el.classList.remove('hidden');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+// ── 시작 ───────────────────────────────────────────────────────────────────
+if (token) {
+  initApp().catch(() => {
+    localStorage.removeItem('admin_token');
+    token = '';
+  });
+}
+
+// 모달 바깥 클릭으로 닫기
+['lobbyModal','banModal','unbanModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal(id);
+  });
+});
+</script>
+</body>
+</html>
