@@ -393,8 +393,16 @@ class LobbyView(discord.ui.View):
         )
         leave_btn.callback = self._leave
 
+        complete_btn = discord.ui.Button(
+            label="🏁 내전 완료",
+            style=discord.ButtonStyle.gray,
+            custom_id=f"complete_lobby_{lobby_id}",
+        )
+        complete_btn.callback = self._complete
+
         self.add_item(join_btn)
         self.add_item(leave_btn)
+        self.add_item(complete_btn)
 
     async def _join(self, interaction: discord.Interaction) -> None:
         lobby = await db.get_lobby(self.lobby_id)
@@ -498,6 +506,57 @@ class LobbyView(discord.ui.View):
                 )
 
         await refresh_lobby_embed(self.bot, self.lobby_id)
+
+    async def _complete(self, interaction: discord.Interaction) -> None:
+        lobby = await db.get_lobby(self.lobby_id)
+        if not lobby or lobby["status"] not in ("open", "full"):
+            await interaction.response.send_message("❌ 이미 종료된 내전입니다.", ephemeral=True)
+            return
+
+        if lobby["creator_discord_id"] != str(interaction.user.id):
+            await interaction.response.send_message(
+                "❌ 내전 개설자만 완료 처리할 수 있습니다.", ephemeral=True
+            )
+            return
+
+        members = await db.get_lobby_members(self.lobby_id)
+        await db.close_lobby(self.lobby_id, "completed")
+        await db.log_event(
+            "lobby_completed",
+            guild_id=lobby.get("guild_id"),
+            lobby_id=self.lobby_id,
+            discord_id=str(interaction.user.id),
+        )
+
+        # 모집 메시지 수정
+        try:
+            ch = self.bot.get_channel(int(lobby["channel_id"])) or await self.bot.fetch_channel(
+                int(lobby["channel_id"])
+            )
+            if lobby.get("message_id"):
+                msg = await ch.fetch_message(int(lobby["message_id"]))
+                complete_embed = discord.Embed(
+                    title="🏁 내전 완료",
+                    description=f"<@{lobby['creator_discord_id']}>님의 내전이 완료되었습니다.\n참가자 수: {len(members)}명",
+                    color=discord.Color.gold(),
+                )
+                await msg.edit(embed=complete_embed, view=None)
+        except Exception as e:
+            print(f"[lobby] 완료 메시지 수정 실패: {e}")
+
+        await interaction.response.send_message("✅ 내전이 완료 처리되었습니다.", ephemeral=True)
+
+        # 참가자 전원 DM (개설자 제외)
+        creator_id = lobby["creator_discord_id"]
+        for member in members:
+            if member["discord_id"] == creator_id:
+                continue
+            await _try_dm(
+                self.bot,
+                int(member["discord_id"]),
+                f"🏁 **내전이 완료되었습니다!**\n"
+                f"내전 ID: `#{lobby['id']}` | 개설자: <@{creator_id}> | 채널: <#{lobby['channel_id']}>",
+            )
 
 
 # ── 대기열 포지션 선택 뷰 ─────────────────────────────────────────────────────

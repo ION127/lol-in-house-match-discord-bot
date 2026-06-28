@@ -106,15 +106,17 @@ class LolCustomBot(commands.Bot):
         """12시간 이상 열린 내전 자동 만료 — 개설자에게만 DM"""
         expired = await get_expired_lobbies(hours=12)
         for lobby in expired:
-            await close_lobby(lobby["id"], "cancelled")
+            was_full = lobby["status"] == "full"
+            final_status = "completed" if was_full else "cancelled"
+            await close_lobby(lobby["id"], final_status)
             await log_event(
-                "lobby_expired",
+                "lobby_completed" if was_full else "lobby_expired",
                 guild_id=lobby.get("guild_id"),
                 lobby_id=lobby["id"],
                 discord_id=lobby.get("creator_discord_id"),
-                detail="12시간 자동 만료",
+                detail="12시간 자동 완료" if was_full else "12시간 자동 만료",
             )
-            logger.info(f"[자동 만료] 내전 ID {lobby['id']} (12시간 초과)")
+            logger.info(f"[자동 만료] 내전 ID {lobby['id']} → {final_status} (12시간 초과)")
 
             try:
                 ch = self.get_channel(int(lobby["channel_id"])) or await self.fetch_channel(
@@ -122,11 +124,18 @@ class LolCustomBot(commands.Bot):
                 )
                 if lobby.get("message_id"):
                     msg = await ch.fetch_message(int(lobby["message_id"]))
-                    embed = discord.Embed(
-                        title="⏰ 내전 자동 만료",
-                        description="12시간이 지나 내전이 자동으로 종료되었습니다.",
-                        color=discord.Color.orange(),
-                    )
+                    if was_full:
+                        embed = discord.Embed(
+                            title="🏁 내전 완료",
+                            description="10명이 모인 후 12시간이 지나 자동으로 완료 처리되었습니다.",
+                            color=discord.Color.gold(),
+                        )
+                    else:
+                        embed = discord.Embed(
+                            title="⏰ 내전 자동 만료",
+                            description="12시간이 지나 내전이 자동으로 종료되었습니다.",
+                            color=discord.Color.orange(),
+                        )
                     await msg.edit(embed=embed, view=None)
             except Exception as e:
                 logger.warning(f"[자동 만료] 메시지 수정 실패: {e}")
@@ -135,11 +144,18 @@ class LolCustomBot(commands.Bot):
             try:
                 creator = self.get_user(int(lobby["creator_discord_id"])) or \
                           await self.fetch_user(int(lobby["creator_discord_id"]))
-                await creator.send(
-                    f"⏰ **내전이 자동 종료되었습니다.**\n"
-                    f"내전 ID: `#{lobby['id']}` | 채널: <#{lobby['channel_id']}>\n"
-                    f"개설 후 12시간이 지나 자동으로 종료되었습니다."
-                )
+                if was_full:
+                    await creator.send(
+                        f"🏁 **내전이 자동 완료 처리되었습니다.**\n"
+                        f"내전 ID: `#{lobby['id']}` | 채널: <#{lobby['channel_id']}>\n"
+                        f"10명이 모인 후 12시간이 지나 자동으로 완료되었습니다."
+                    )
+                else:
+                    await creator.send(
+                        f"⏰ **내전이 자동 종료되었습니다.**\n"
+                        f"내전 ID: `#{lobby['id']}` | 채널: <#{lobby['channel_id']}>\n"
+                        f"개설 후 12시간이 지나 자동으로 종료되었습니다."
+                    )
             except Exception:
                 pass
 

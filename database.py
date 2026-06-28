@@ -193,7 +193,7 @@ async def get_expired_lobbies(hours: int = 24) -> list[dict]:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            """SELECT * FROM lobbies WHERE status = 'open'
+            """SELECT * FROM lobbies WHERE status IN ('open', 'full')
                AND created_at <= datetime('now', ?)""",
             (f"-{hours} hours",),
         ) as cur:
