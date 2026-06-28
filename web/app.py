@@ -193,7 +193,10 @@ async def kick_lobby_member(lobby_id: int, discord_id: str):
         # 내보낸 유저 DM
         try:
             user = bot.get_user(int(discord_id)) or await bot.fetch_user(int(discord_id))
-            await user.send("❌ 관리자에 의해 내전에서 제외되었습니다.")
+            await user.send(
+                f"❌ **관리자에 의해 내전에서 제외되었습니다.**\n"
+                f"내전 ID: `#{lobby_id}` | 개설자: <@{lobby['creator_discord_id']}> | 채널: <#{lobby['channel_id']}>"
+            )
         except Exception:
             pass
 
@@ -270,7 +273,10 @@ async def cancel_lobby(lobby_id: int):
                 user = bot.get_user(int(m["discord_id"])) or await bot.fetch_user(
                     int(m["discord_id"])
                 )
-                await user.send("❌ 참가 중이던 내전이 관리자에 의해 취소되었습니다.")
+                await user.send(
+                    f"❌ **참가 중이던 내전이 관리자에 의해 취소되었습니다.**\n"
+                    f"내전 ID: `#{lobby_id}` | 개설자: <@{lobby['creator_discord_id']}> | 채널: <#{lobby['channel_id']}>"
+                )
             except Exception:
                 pass
 

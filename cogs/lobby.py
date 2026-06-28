@@ -645,15 +645,19 @@ class LobbyCog(commands.Cog):
         await db.update_lobby_message(lobby_id, str(msg.id))
         await interaction.delete_original_response()
 
-        # 개설자 자동 참가 (라이엇 ID 있을 때)
+        # 개설자도 포지션·팀 선택 후 참가 (다른 참가자와 동일한 흐름)
         user = await db.get_user(creator_id)
         if user and user.get("game_name"):
-            await db.add_lobby_member(lobby_id, creator_id, position=user.get("main_role", "무관"))
-            await refresh_lobby_embed(self.bot, lobby_id)
+            await interaction.followup.send(
+                "✅ 내전이 개설되었습니다!\n참가할 포지션을 선택해주세요:",
+                view=PositionSelectView(lobby_id, self.bot),
+                ephemeral=True,
+            )
         else:
             await interaction.followup.send(
+                "✅ 내전이 개설되었습니다!\n"
                 "⚠️ 라이엇 계정이 등록되어 있지 않습니다.\n"
-                "참가하기 버튼을 눌러 계정을 등록하고 내전에 참가하세요.",
+                "**참가하기** 버튼을 눌러 계정을 등록하고 내전에 참가하세요.",
                 ephemeral=True,
             )
 
@@ -704,7 +708,7 @@ class LobbyCog(commands.Cog):
                 self.bot,
                 int(member["discord_id"]),
                 f"❌ **내전이 취소되었습니다.**\n"
-                f"<@{creator_id}>님이 내전을 취소했습니다.",
+                f"내전 ID: `#{lobby['id']}` | 개설자: <@{creator_id}> | 채널: <#{lobby['channel_id']}>",
             )
 
         # 대기열 멤버에게도 DM
@@ -713,7 +717,8 @@ class LobbyCog(commands.Cog):
             await _try_dm(
                 self.bot,
                 int(entry["discord_id"]),
-                "❌ 대기 중이던 내전이 취소되었습니다.",
+                f"❌ **대기 중이던 내전이 취소되었습니다.**\n"
+                f"내전 ID: `#{lobby['id']}` | 개설자: <@{creator_id}> | 채널: <#{lobby['channel_id']}>",
             )
 
         await self._send_to_log(

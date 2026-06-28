@@ -137,7 +137,8 @@ class LolCustomBot(commands.Bot):
                           await self.fetch_user(int(lobby["creator_discord_id"]))
                 await creator.send(
                     f"⏰ **내전이 자동 종료되었습니다.**\n"
-                    f"개설하신 내전(ID: {lobby['id']})이 12시간이 지나 자동으로 종료되었습니다."
+                    f"내전 ID: `#{lobby['id']}` | 채널: <#{lobby['channel_id']}>\n"
+                    f"개설 후 12시간이 지나 자동으로 종료되었습니다."
                 )
             except Exception:
                 pass
