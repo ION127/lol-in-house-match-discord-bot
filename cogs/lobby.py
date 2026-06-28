@@ -432,8 +432,17 @@ class LobbyView(discord.ui.View):
             )
             return
 
-        # 자리 있음 → 포지션 선택
-        await interaction.response.send_message(
+        # 자리 있음 → Riot 데이터 갱신 후 포지션 선택
+        # API 호출이 있어서 defer 후 followup으로 처리
+        await interaction.response.defer(ephemeral=True)
+
+        user = await db.get_user(str(interaction.user.id))
+        if user and user.get("game_name"):
+            refreshed = await riot.fetch_full_user_data(user["game_name"], user["tag_line"])
+            if refreshed:
+                await db.upsert_user(str(interaction.user.id), **refreshed)
+
+        await interaction.followup.send(
             "참가할 포지션을 선택해주세요:",
             view=PositionSelectView(self.lobby_id, self.bot),
             ephemeral=True,
