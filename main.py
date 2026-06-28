@@ -207,7 +207,7 @@ def main() -> None:
             web_app,
             host="0.0.0.0",
             port=WEB_PORT,
-            log_level="warning",
+            log_level="error",
         )
         web_server = uvicorn.Server(web_config)
         web_server.install_signal_handlers = lambda: None  # asyncio가 시그널 처리

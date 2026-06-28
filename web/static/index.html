@@ -369,9 +369,32 @@ let lobbyFilter = 'all';
 let currentPage = '';
 
 // ── 상수 ──────────────────────────────────────────────────────────────────
-const TIER_EMOJI = {IRON:'⬛',BRONZE:'🟫',SILVER:'⬜',GOLD:'🟨',PLATINUM:'🟩',EMERALD:'💚',DIAMOND:'🔷',MASTER:'🟣',GRANDMASTER:'🔴',CHALLENGER:'🏆',UNRANKED:'❓'};
 const TIER_KO = {IRON:'아이언',BRONZE:'브론즈',SILVER:'실버',GOLD:'골드',PLATINUM:'플래티넘',EMERALD:'에메랄드',DIAMOND:'다이아',MASTER:'마스터',GRANDMASTER:'그랜드마스터',CHALLENGER:'챌린저',UNRANKED:'언랭'};
-const POS_EMOJI = {'탑':'🔝','정글':'🌲','미드':'⚔️','원딜':'🏹','서폿':'🛡️','무관':'🎲'};
+
+// CDragon 이미지 URL
+const _CDRAG_TIER = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/';
+const _CDRAG_POS  = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/';
+const TIER_IMG_URL = {
+  IRON:'iron.png', BRONZE:'bronze.png', SILVER:'silver.png', GOLD:'gold.png',
+  PLATINUM:'platinum.png', EMERALD:'emerald.png', DIAMOND:'diamond.png',
+  MASTER:'master.png', GRANDMASTER:'grandmaster.png', CHALLENGER:'challenger.png',
+  UNRANKED:'unranked.png',
+};
+const POS_IMG_URL = {
+  '탑':'icon-position-top.png', '정글':'icon-position-jungle.png',
+  '미드':'icon-position-middle.png', '원딜':'icon-position-bottom.png',
+  '서폿':'icon-position-utility.png', '무관':'icon-position-fill.png',
+};
+
+function tierImg(tier, size=18) {
+  const f = TIER_IMG_URL[tier] || TIER_IMG_URL['UNRANKED'];
+  return `<img src="${_CDRAG_TIER}${f}" style="width:${size}px;height:${size}px;object-fit:contain;" class="inline align-middle" alt="${tier}">`;
+}
+function posImg(pos, size=16) {
+  const f = POS_IMG_URL[pos];
+  if (!f) return `<span class="text-gray-400">${pos||'무관'}</span>`;
+  return `<img src="${_CDRAG_POS}${f}" style="width:${size}px;height:${size}px;object-fit:contain;" class="inline align-middle" alt="${pos}">`;
+}
 const STATUS_BADGE = {
   open: '<span class="bg-green-900/60 text-green-300 text-xs px-2 py-0.5 rounded-full">모집 중</span>',
   full: '<span class="bg-blue-900/60 text-blue-300 text-xs px-2 py-0.5 rounded-full">모집 완료</span>',
@@ -566,7 +589,7 @@ async function viewLobby(id) {
       <h4 class="text-xs text-gray-500 uppercase tracking-wide mb-2">참가자</h4>
       ${teamSection('1팀','🔵')}${teamSection('2팀','🔴')}
       ${unassigned.length ? `<div class="mb-3"><div class="text-xs text-gray-500 mb-1.5">⬜ 팀 미정 (${unassigned.length}명)</div>${unassigned.map((m,i)=>memberRow(m, i+1, l.id, isActive)).join('')}</div>` : ''}
-      ${waitlist.length ? `<h4 class="text-xs text-gray-500 uppercase tracking-wide mt-4 mb-2">대기열</h4>${waitlist.map((w,i)=>`<div class="flex items-center gap-2 bg-gray-800/40 rounded-lg px-3 py-2 mb-1 text-xs text-gray-400"><span>${i+1}</span><span class="font-mono truncate">${w.discord_id}</span><span>${POS_EMOJI[w.position]||''}${w.position}</span><span class="ml-auto ${w.team==='1팀'?'text-blue-400':w.team==='2팀'?'text-red-400':'text-gray-500'}">${w.team||'미정'}</span></div>`).join('')}` : ''}
+      ${waitlist.length ? `<h4 class="text-xs text-gray-500 uppercase tracking-wide mt-4 mb-2">대기열</h4>${waitlist.map((w,i)=>`<div class="flex items-center gap-2 bg-gray-800/40 rounded-lg px-3 py-2 mb-1 text-xs text-gray-400"><span>${i+1}</span><span class="font-mono truncate">${w.discord_id}</span><span class="flex items-center gap-1">${posImg(w.position,14)} ${w.position}</span><span class="ml-auto ${w.team==='1팀'?'text-blue-400':w.team==='2팀'?'text-red-400':'text-gray-500'}">${w.team||'미정'}</span></div>`).join('')}` : ''}
       ${isActive ? `<button onclick="cancelLobby(${l.id},true)" class="mt-5 w-full bg-red-600 hover:bg-red-500 text-white text-sm py-2.5 rounded-xl transition-colors">🗑️ 내전 강제 취소</button>` : ''}
     `;
   } catch(e) {
@@ -580,14 +603,15 @@ function memberRow(m, i, lobbyId = null, canKick = false) {
   const kickBtn = canKick && lobbyId != null
     ? `<button onclick="kickMember(${lobbyId},'${m.discord_id}')" class="shrink-0 text-xs bg-red-900/50 hover:bg-red-800/70 text-red-300 px-2 py-0.5 rounded transition-colors">내보내기</button>`
     : '';
+  const tierLabel = tier === 'UNRANKED' ? '언랭' : `${TIER_KO[tier]||tier}${m.solo_rank ? ' '+m.solo_rank : ''}`;
   return `
     <div class="flex items-center gap-2 bg-gray-800/40 rounded-lg px-3 py-2 mb-1 text-xs">
       <span class="text-gray-600 w-4 shrink-0">${i}</span>
       <span class="font-mono text-gray-400 shrink-0">${m.discord_id}</span>
       <span class="text-white truncate">${riotId}</span>
       <span class="ml-auto flex items-center gap-1.5 text-gray-400 shrink-0">
-        <span class="hidden sm:inline">${POS_EMOJI[m.position]||''}${m.position||'무관'}</span>
-        <span>${TIER_EMOJI[tier]||'❓'} ${TIER_KO[tier]||tier}${m.solo_rank ? ' '+m.solo_rank : ''}</span>
+        <span class="hidden sm:inline flex items-center gap-1">${posImg(m.position)} <span>${m.position||'무관'}</span></span>
+        <span class="flex items-center gap-1">${tierImg(tier)} <span>${tierLabel}</span></span>
         ${kickBtn}
       </span>
     </div>`;
@@ -637,13 +661,16 @@ function renderUsers(users) {
   if (!users.length) { tb.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">유저가 없습니다</td></tr>`; return; }
   tb.innerHTML = users.map(u => {
     const tier = u.solo_tier || 'UNRANKED';
-    const tierStr = TIER_KO[tier] ? `${TIER_EMOJI[tier]} ${TIER_KO[tier]}${u.solo_rank ? ' '+u.solo_rank : ''}` : '—';
+    const tierLabel = tier === 'UNRANKED' ? '언랭' : `${TIER_KO[tier]||tier}${u.solo_rank ? ' '+u.solo_rank : ''}`;
+    const tierStr = `<span class="flex items-center gap-1">${tierImg(tier,18)} <span>${tierLabel}</span></span>`;
+    const mainPos = `<span class="flex items-center gap-1 inline-flex">${posImg(u.main_role,14)} <span>${u.main_role||'무관'}</span></span>`;
+    const subPos  = `<span class="flex items-center gap-1 inline-flex">${posImg(u.sub_role,14)} <span>${u.sub_role||'무관'}</span></span>`;
     return `
     <tr class="hover:bg-gray-800/30 transition-colors">
       <td class="px-4 py-3 font-mono text-xs text-gray-400">${u.discord_id}</td>
       <td class="px-4 py-3 text-sm text-white">${u.game_name ? `${u.game_name}<span class="text-gray-500">#${u.tag_line}</span>` : '<span class="text-gray-600">미등록</span>'}</td>
       <td class="px-4 py-3 text-sm whitespace-nowrap">${tierStr}</td>
-      <td class="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">${POS_EMOJI[u.main_role]||''}${u.main_role||'무관'} / ${POS_EMOJI[u.sub_role]||''}${u.sub_role||'무관'}</td>
+      <td class="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">${mainPos} / ${subPos}</td>
       <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${fmtDate(u.updated_at)}</td>
       <td class="px-4 py-3">
         <div class="flex gap-1.5">

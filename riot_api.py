@@ -21,26 +21,26 @@ TIER_KO: dict[str, str] = {
 }
 
 TIER_EMOJI: dict[str, str] = {
-    "IRON": "⬛",
-    "BRONZE": "🟫",
-    "SILVER": "⬜",
-    "GOLD": "🟨",
-    "PLATINUM": "🟩",
-    "EMERALD": "💚",
-    "DIAMOND": "🔷",
-    "MASTER": "🟣",
-    "GRANDMASTER": "🔴",
-    "CHALLENGER": "🏆",
-    "UNRANKED": "❓",
+    "IRON":        "<:iron:1520784448743014570>",
+    "BRONZE":      "<:bronze:1520784363367956510>",
+    "SILVER":      "<:silver:1520784570977357915>",
+    "GOLD":        "<:gold:1520784430447464468>",
+    "PLATINUM":    "<:platinum:1520784481072582686>",
+    "EMERALD":     "<:emerald:1520784416287363184>",
+    "DIAMOND":     "<:diamond:1520784402768990279>",
+    "MASTER":      "<:master1:1520784465100538036>",
+    "GRANDMASTER": "<:grandmaster:1520785144510677022>",
+    "CHALLENGER":  "<:challenger:1520784388076601404>",
+    "UNRANKED":    "<:unranked:1520787887853928548>",
 }
 
 ROLE_EMOJI: dict[str, str] = {
-    "탑": "🔝",
-    "정글": "🌲",
-    "미드": "⚔️",
-    "원딜": "🏹",
-    "서폿": "🛡️",
-    "무관": "🎲",
+    "탑":   "<:positiontop:1520784540896067785>",
+    "정글": "<:positionjungle:1520784513238831187>",
+    "미드": "<:positionmiddle:1520784528082337832>",
+    "원딜": "<:positionbottom:1520784499078594560>",
+    "서폿": "<:positionutility:1520784553340440576>",
+    "무관": "<:iconpositionfill:1520789384184725556>",
 }
 
 ROLE_KO: dict[str, str] = {
